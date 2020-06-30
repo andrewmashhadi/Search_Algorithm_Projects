@@ -154,6 +154,7 @@ class BFSWidget(QWidget):
     def mouseEventHelper(self, e):
         x_space = self.width() // self.cols
         y_space = self.height() // self.rows 
+        px = py = None
         self.numClicks += 1
         for i in range(0, self.cols):
             if i*x_space <= e.x() < (i+1)*x_space:
@@ -163,26 +164,28 @@ class BFSWidget(QWidget):
             if j*y_space <= e.y() < (j+1)*y_space:
                 py = j
                 break
-            
+        
         return px, py
     
     
     def mousePressEvent(self, e):
         px, py = self.mouseEventHelper(e)
-        if self.numClicks == 1:
-            self.start = (px, py)
-        elif self.numClicks == 2:         
-            self.end = (px, py)
-        else:
-            self.obstacles.append((px, py))          
-        self.update()
+        if px != None and py != None:
+            if self.numClicks == 1:
+                self.start = (px, py)
+            elif self.numClicks == 2:         
+                self.end = (px, py)
+            else:
+                self.obstacles.append((px, py))          
+            self.update()
     
     
     def mouseMoveEvent(self, e):
         if self.numClicks > 2:
             px, py = self.mouseEventHelper(e)
-            self.obstacles.append((px, py))          
-            self.update()              
+            if px != None and py != None:
+                self.obstacles.append((px, py))          
+                self.update()              
             
             
     def performBFS(self):
