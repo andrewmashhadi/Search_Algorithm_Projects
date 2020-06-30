@@ -59,10 +59,12 @@ class BFSWidget(QWidget):
         self.g_size = 15
         self.rows = self.cols = self.g_size
         self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
-        self.noPathMsg = QMessageBox(self)
-        self.noPathMsg.setWindowTitle("ERROR")
-        self.noPathMsg.setStandardButtons(QMessageBox.Ok)
-        self.noPathMsg.setText('There is no path!')
+        self.L = []
+        self.T = []
+        self.ErrorMsg = QMessageBox(self)
+        self.ErrorMsg.setWindowTitle("ERROR")
+        self.ErrorMsg.setStandardButtons(QMessageBox.Ok)
+        
         
     def initDrawBFSInfo(self):
         self.numClicks = 0
@@ -83,8 +85,12 @@ class BFSWidget(QWidget):
 
         
     def resizeGrid(self, gs):
-        assert self.start == (-1, -1) and self.end == (-1, -1),        \
-               "cannot resize the grid while the start/end points are already specified"      
+      
+        if self.start != (-1, -1) or self.end != (-1, -1):
+            self.ErrorMsg.setText("Can't resize the grid while the start\n or end point is already specified.")
+            self.ErrorMsg.show()
+            return
+            
         self.g_size = gs
         self.rows = self.cols = self.g_size
         self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
@@ -189,8 +195,11 @@ class BFSWidget(QWidget):
             
             
     def performBFS(self):
-        assert self.start != (-1, -1) and self.end != (-1, -1),       \
-            "cannot find a path without specifying a start/end point"
+        
+        if self.start == (-1, -1) or self.end == (-1, -1):
+            self.ErrorMsg.setText("Can't find a path without specifying\na start point and end point.")
+            self.ErrorMsg.show()
+            return
         
         self.discovered[:, :] = False
         if len(self.obstacles) != 0:
@@ -226,7 +235,8 @@ class BFSWidget(QWidget):
             self.activateSearchDraw = True
             self.findPath(s, f)
         else:
-            self.noPathMsg.show()
+            self.ErrorMsg.setText('There is no path!')
+            self.ErrorMsg.show()
             
     
     def findPath(self, s, f):
