@@ -7,7 +7,7 @@ Created on Sat Jun 20 22:45:06 2020
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSpinBox, QMenu
 from PyQt5.QtGui import QPainter, QColor
-from Search_Algorithm_Widgets import BFSWidget
+from Search_Algorithm_Widgets import BFSWidget, DFSWidget
 
                 
 class MySearchWidget(QWidget):
@@ -28,6 +28,8 @@ class MySearchWidget(QWidget):
         w = (2*self.width()) // 3 - 40
         h = self.height() - 40
         self.BFSWid = BFSWidget(self, x, y, w, h)
+        self.DFSWid = None
+        self.DijkstraWid = None
         
     
     def initControls(self):
@@ -39,7 +41,7 @@ class MySearchWidget(QWidget):
                           + "any grid areas for obstacles you\nwant the path " \
                           + "to go around.\n4) Choose which algorithm you\n"  \
                           + "want to visualize.\n5) Press the botton below" \
-                          + " to find\nthe shortest path.", self)
+                          + " to find\nthe path.", self)
         self.ins.move(20, 35)
         self.ins.setStyleSheet("QLabel {color : white; font-size: 15pt; font-family: Impact;}")
         
@@ -71,6 +73,7 @@ class MySearchWidget(QWidget):
         alg_menu = QMenu()
         alg_menu.addAction('Breadth First Search', self.setAlgtoBFS)
         alg_menu.addAction("Dijkstra's Algorithm", self.setAlgtoDijkstra)
+        alg_menu.addAction('Depth First Search', self.setAlgtoDFS)
         
         self.alg_btn = QPushButton('Breadth First Search', self)
         self.alg_btn.move(90, 740)
@@ -81,16 +84,65 @@ class MySearchWidget(QWidget):
         
     def setAlgtoBFS(self):
         self.alg_btn.setText('Breadth First Search')
-
+        if self.DFSWid != None:
+            self.DFSWid.setParent(None)
+            self.DFSWid = None
+        elif self.DijkstraWid != None:
+            self.DijkstraWid.setParent(None)
+            self.DijkstraWid = None
+            
+        x = self.width() // 3 + 20
+        y = 40
+        w = (2*self.width()) // 3 - 40
+        h = self.height() - 40
+        self.BFSWid = BFSWidget(self, x, y, w, h)
+        self.gs_spinbox.disconnect()
+        self.gs_spinbox.setValue(15)      
+        self.gs_spinbox.valueChanged.connect(self.BFSWid.resizeGrid)
+        self.path_btn.disconnect()
+        self.path_btn.clicked.connect(self.BFSWid.performBFS)
+        self.reset_btn.disconnect()
+        self.reset_btn.clicked.connect(self.BFSWid.reset)
+        self.reset_btn.clicked.connect(self.BFSWid.update)
 
     def setAlgtoDijkstra(self):
         self.alg_btn.setText("Dijkstra's Algorithm")
-
         
+
+    def setAlgtoDFS(self):
+        self.alg_btn.setText('Depth First Search')
+        if self.BFSWid != None:
+            self.BFSWid.setParent(None)
+            self.BFSWid = None
+        elif self.DijkstraWid != None:
+            self.DijkstraWid.setParent(None)
+            self.DijkstraWid = None
+        
+        x = self.width() // 3 + 20
+        y = 40
+        w = (2*self.width()) // 3 - 40
+        h = self.height() - 40
+        self.DFSWid = DFSWidget(self, x, y, w, h)
+        self.gs_spinbox.disconnect()
+        self.gs_spinbox.setValue(15)
+        self.gs_spinbox.valueChanged.connect(self.DFSWid.resizeGrid)
+        self.path_btn.disconnect()
+        self.path_btn.clicked.connect(self.DFSWid.performDFS)
+        self.reset_btn.disconnect()
+        self.reset_btn.clicked.connect(self.DFSWid.reset)
+        self.reset_btn.clicked.connect(self.DFSWid.update)
+            
+    
     def paintEvent(self, event):
         
-        self.BFSWid.move(self.width() // 3 + 20, 40)
-        self.BFSWid.resize((2*self.width()) // 3 - 40, self.height() - 80)
+        curr_wid = None
+        for wid in [self.BFSWid, self.DijkstraWid, self.DFSWid]:
+            if wid != None:
+                curr_wid = wid
+                break
+            
+        curr_wid.move(self.width() // 3 + 20, 40)
+        curr_wid.resize((2*self.width()) // 3 - 40, self.height() - 80)
         
         qp = QPainter()
         
