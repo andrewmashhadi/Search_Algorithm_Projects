@@ -7,7 +7,7 @@ Created on Sat Jun 20 22:45:06 2020
 
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSpinBox, QMenu
 from PyQt5.QtGui import QPainter, QColor
-from Search_Algorithm_Widgets import BFSWidget, DFSWidget
+from Search_Algorithm_Widgets import BFSWidget, DFSWidget, DijkstrasWidget
 
                 
 class MySearchWidget(QWidget):
@@ -37,10 +37,10 @@ class MySearchWidget(QWidget):
         
         self.ins = QLabel("STEPS:\n1) Specify the grid size.\n" \
                           + "2) Click on a start point and an\nendpoint" \
-                          + " on grid.\n3) Click or drag your mouse on\n" \
+                          + " on grid.\n3) Choose which algorithm you\n"  \
+                          + "want to visualize.\n4) Click or drag your mouse on\n" \
                           + "any grid areas for obstacles you\nwant the path " \
-                          + "to go around.\n4) Choose which algorithm you\n"  \
-                          + "want to visualize.\n5) Press the botton below" \
+                          + "to go around.\n5) Press the botton below" \
                           + " to find\nthe path.", self)
         self.ins.move(20, 35)
         self.ins.setStyleSheet("QLabel {color : white; font-size: 15pt; font-family: Impact;}")
@@ -97,7 +97,7 @@ class MySearchWidget(QWidget):
         h = self.height() - 40
         self.BFSWid = BFSWidget(self, x, y, w, h)
         self.gs_spinbox.disconnect()
-        self.gs_spinbox.setValue(15)      
+        self.gs_spinbox.setValue(15)
         self.gs_spinbox.valueChanged.connect(self.BFSWid.resizeGrid)
         self.path_btn.disconnect()
         self.path_btn.clicked.connect(self.BFSWid.performBFS)
@@ -105,8 +105,29 @@ class MySearchWidget(QWidget):
         self.reset_btn.clicked.connect(self.BFSWid.reset)
         self.reset_btn.clicked.connect(self.BFSWid.update)
 
+
     def setAlgtoDijkstra(self):
         self.alg_btn.setText("Dijkstra's Algorithm")
+        if self.BFSWid != None:
+            self.BFSWid.setParent(None)
+            self.BFSWid = None
+        elif self.DFSWid != None:
+            self.DFSWid.setParent(None)
+            self.DFSWid = None
+            
+        x = self.width() // 3 + 20
+        y = 40
+        w = (2*self.width()) // 3 - 40
+        h = self.height() - 40
+        self.DijkstraWid = DijkstrasWidget(self, x, y, w, h)
+        self.gs_spinbox.disconnect()
+        self.gs_spinbox.setValue(15)      
+        self.gs_spinbox.valueChanged.connect(self.DijkstraWid.resizeGrid)
+        self.path_btn.disconnect()
+        self.path_btn.clicked.connect(self.DijkstraWid.performDijkstras)
+        self.reset_btn.disconnect()
+        self.reset_btn.clicked.connect(self.DijkstraWid.reset)
+        self.reset_btn.clicked.connect(self.DijkstraWid.update)
         
 
     def setAlgtoDFS(self):
