@@ -35,10 +35,10 @@ class MySearchWidget(QWidget):
     def initControls(self):
         self.setWindowTitle('Path Finding Fun!')
         
-        self.ins = QLabel("STEPS:\n1) Specify the grid size.\n" \
-                          + "2) Click on a start point and an\nendpoint" \
-                          + " on grid.\n3) Choose which algorithm you\n"  \
-                          + "want to visualize.\n4) Click or drag your mouse on\n" \
+        self.ins = QLabel("STEPS:\n1) Choose which algorithm you\n"  \
+                          + "want to visualize.\n2) Specify the grid size.\n" \
+                          + "3) Click on a start point and an\nendpoint" \
+                          + " on grid.\n4) Click or drag your mouse on\n" \
                           + "any grid areas for obstacles you\nwant the path " \
                           + "to go around.\n5) Press the botton below" \
                           + " to find\nthe path.", self)
@@ -85,9 +85,11 @@ class MySearchWidget(QWidget):
     def setAlgtoBFS(self):
         self.alg_btn.setText('Breadth First Search')
         if self.DFSWid != None:
+            self.DFSWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution
             self.DFSWid.setParent(None)
             self.DFSWid = None
         elif self.DijkstraWid != None:
+            self.DijkstraWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution
             self.DijkstraWid.setParent(None)
             self.DijkstraWid = None
             
@@ -109,9 +111,11 @@ class MySearchWidget(QWidget):
     def setAlgtoDijkstra(self):
         self.alg_btn.setText("Dijkstra's Algorithm")
         if self.BFSWid != None:
+            self.BFSWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution 
             self.BFSWid.setParent(None)
             self.BFSWid = None
         elif self.DFSWid != None:
+            self.DFSWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution
             self.DFSWid.setParent(None)
             self.DFSWid = None
             
@@ -133,9 +137,11 @@ class MySearchWidget(QWidget):
     def setAlgtoDFS(self):
         self.alg_btn.setText('Depth First Search')
         if self.BFSWid != None:
+            self.BFSWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution 
             self.BFSWid.setParent(None)
             self.BFSWid = None
         elif self.DijkstraWid != None:
+            self.DijkstraWid.paintOverEvent(QColor(50, 50, 50)) # Safety Precaution
             self.DijkstraWid.setParent(None)
             self.DijkstraWid = None
         
