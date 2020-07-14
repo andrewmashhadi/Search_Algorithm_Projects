@@ -12,6 +12,7 @@ import numpy as np
 from heapdict import heapdict as pq
 import math
 
+#%% Node Class
 class Node:
     
     def __init__(self, x, y):
@@ -28,7 +29,7 @@ class Node:
             return True       
         return False
     
-    
+#%% Thread Class
 class Thread(QThread):
     
     def __init__(self, parent, func, rate = 1000):
@@ -41,17 +42,18 @@ class Thread(QThread):
         timer.timeout.connect(self.func)
         timer.start(self.rate)
          
-        self.exec_()    
+        self.exec_()   
+        
+        
+#%% Abstract Base Class for each search widgets
+class SearchWidget(QWidget):
     
-
-class BFSWidget(QWidget):
-    
-    def __init__(self, parent, x, y, w, h):
+    def __init__(self, parent, x, y, w, h, rate):
         super().__init__(parent)        
         self.initSearchInfo()
-        self.initDrawBFSInfo()
+        self.initDrawInfo()
         self.initUI(x, y, w, h)
-        self.initTimerThread()
+        self.initTimerThread(rate)
         
         
     def initSearchInfo(self):
@@ -60,17 +62,14 @@ class BFSWidget(QWidget):
         self.obstacles = []
         self.g_size = 15
         self.rows = self.cols = self.g_size
-        self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
-        self.L = []
-        self.T = []
         self.ErrorMsg = QMessageBox(self)
         self.ErrorMsg.setWindowTitle("ERROR")
         self.ErrorMsg.setStandardButtons(QMessageBox.Ok)
-        
-        
-    def initDrawBFSInfo(self):
+    
+    
+    def initDrawInfo(self):
         self.numClicks = 0
-        self.layersToDraw = []
+        self.NodesToDraw = []
         self.path = []
         self.pathfound = False
         self.activateSearchDraw = False
@@ -83,13 +82,12 @@ class BFSWidget(QWidget):
         self.show()
         
         
-    def initTimerThread(self):
-        self.drawingTimerThread = Thread(self, self.showSearch, 150)
+    def initTimerThread(self, rate):
+        self.drawingTimerThread = Thread(self, self.showSearch, rate)
         self.drawingTimerThread.start()
-
+        
         
     def resizeGrid(self, gs):
-      
         if self.start != (-1, -1) or self.end != (-1, -1):
             self.ErrorMsg.setText("Can't resize the grid while the start\n or end point is already specified.")
             self.ErrorMsg.show()
@@ -97,8 +95,6 @@ class BFSWidget(QWidget):
             
         self.g_size = gs
         self.rows = self.cols = self.g_size
-        self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
-        self.update()
         
         
     def paintEvent(self, event):
@@ -109,7 +105,7 @@ class BFSWidget(QWidget):
         if not self.paintOver:
             if self.rows > 1 or self.cols > 1:         
                 self.drawGrid(qp)
-                self.drawOneLayer(qp)
+                self.drawSomeNodes(qp)
                 self.showPath(qp)
         else:
             qp.setPen(self.paintOverColor)
@@ -142,31 +138,25 @@ class BFSWidget(QWidget):
             qp.drawRect(x0*x_space, y0*y_space, x_space, y_space)
             
             
-    def drawOneLayer(self, qp):
+    def drawSomeNodes(self, qp):
         x_space = self.width() // self.cols
         y_space = self.height() // self.rows 
-        numLayers = len(self.layersToDraw)
+        numLayers = len(self.NodesToDraw)
         for i in range(numLayers):
-            for p in self.layersToDraw[i]:
+            for p in self.NodesToDraw[i]:
                 qp.setPen(QColor(0, 0, 0))
                 if i != numLayers - 1:                  
                     qp.setBrush(QColor(34, 139, 34))
                     qp.drawRect(p.x*x_space, p.y*y_space, x_space, y_space)
                 else:
                     qp.setBrush(QColor(154, 205, 50))
-                    qp.drawRect(p.x*x_space, p.y*y_space, x_space, y_space)
+                    qp.drawRect(p.x*x_space, p.y*y_space, x_space, y_space)    
+    
 
-    
     def showPath(self, qp):
-        if self.pathfound:
-            x_space = self.width() // self.cols
-            y_space = self.height() // self.rows 
-            for r in self.path:               
-                qp.setPen(QColor(0, 0, 0))
-                qp.setBrush(QColor(180, 0, 0))
-                qp.drawRect(r.x*x_space, r.y*y_space, x_space, y_space)
-                
+        pass
     
+        
     def mouseEventHelper(self, e):
         x_space = self.width() // self.cols
         y_space = self.height() // self.rows 
@@ -201,8 +191,60 @@ class BFSWidget(QWidget):
             px, py = self.mouseEventHelper(e)
             if px != None and py != None:
                 self.obstacles.append((px, py))          
-                self.update()              
-            
+                self.update()     
+                
+                
+    def showSearch(self):
+        pass
+    
+    
+    def reset(self):
+        self.activateSearchDraw = False
+        self.pathfound = False
+        self.path.clear()
+        self.NodesToDraw.clear()
+        self.obstacles.clear()
+        self.numClicks = 0
+        self.start = (-1, -1)
+        self.end = (-1, -1)
+        
+        
+    def paintOverEvent(self, color):
+        self.paintOver = True
+        self.paintOverColor = color
+        self.update()
+        
+        
+    def closeEvent(self, e):
+        self.drawingTimerThread.quit()
+
+
+#%% Breadth First Search Widget
+class BFSWidget(SearchWidget):
+        
+    
+    def initSearchInfo(self):
+        super().initSearchInfo()
+        self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
+        self.L = []
+        self.T = []
+
+        
+    def resizeGrid(self, gs):     
+        super().resizeGrid(gs)
+        self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
+        self.update()
+        
+
+    def showPath(self, qp):
+        if self.pathfound:
+            x_space = self.width() // self.cols
+            y_space = self.height() // self.rows 
+            for r in self.path:               
+                qp.setPen(QColor(0, 0, 0))
+                qp.setBrush(QColor(180, 0, 0))
+                qp.drawRect(r.x*x_space, r.y*y_space, x_space, y_space)
+                  
             
     def performBFS(self):
         if self.activateSearchDraw == False:
@@ -270,7 +312,7 @@ class BFSWidget(QWidget):
     def showSearch(self):
         if self.activateSearchDraw:
             if len(self.L) != 0:
-                self.layersToDraw.append(self.L[0])
+                self.NodesToDraw.append(self.L[0])
                 del self.L[0]
                 self.update()
                 if len(self.L) == 0:
@@ -280,126 +322,30 @@ class BFSWidget(QWidget):
             else:
                 self.reset()
                 
+                
     def reset(self):
-        self.activateSearchDraw = False
-        self.pathfound = False
-        self.path.clear()
+        super().reset()
         self.T.clear()
-        self.layersToDraw.clear()
-        self.obstacles.clear()
-        self.numClicks = 0
-        self.start = (-1, -1)
-        self.end = (-1, -1)
-        
-    def paintOverEvent(self, color):
-        self.paintOver = True
-        self.paintOverColor = color
-        self.update()
         
         
-    def closeEvent(self, e):
-        self.drawingTimerThread.quit()
+#%% Dijkstras Widget
+class DijkstrasWidget(SearchWidget):
         
-        
-        
-class DijkstrasWidget(QWidget):
-    
-    def __init__(self, parent, x, y, w, h):
-        super().__init__(parent)        
-        self.initSearchInfo()
-        self.initDrawDijkstrasInfo()
-        self.initUI(x, y, w, h)
-        self.initTimerThread()
-        
-        
+
     def initSearchInfo(self):
-        self.start = (-1, -1)
-        self.end = (-1, -1)
-        self.obstacles = []
+        super().initSearchInfo()
         self.L = []
-        self.g_size = 15
-        self.rows = self.cols = self.g_size
         self.d = math.inf * np.ones((self.g_size, self.g_size), dtype = float)
         self.flagged = np.zeros((self.g_size, self.g_size), dtype = bool)        
         self.shortestBack = np.empty((self.g_size, self.g_size), dtype = np.object)
-        self.ErrorMsg = QMessageBox(self)
-        self.ErrorMsg.setWindowTitle("ERROR")
-        self.ErrorMsg.setStandardButtons(QMessageBox.Ok)
-        
-        
-    def initDrawDijkstrasInfo(self):
-        self.numClicks = 0
-        self.NodesToDraw = []
-        self.path = []
-        self.pathfound = False
-        self.activateSearchDraw = False
-        
-        
-    def initTimerThread(self):
-        self.drawingTimerThread = Thread(self, self.showSearch, 50)
-        self.drawingTimerThread.start()
-
-
-    def initUI(self, x, y, w, h):
-        self.paintOver = False
-        self.paintOverColor = None
-        self.setGeometry(x, y, w, h)
-        self.show()
-
-        
+ 
+              
     def resizeGrid(self, gs):
-      
-        if self.start != (-1, -1) or self.end != (-1, -1):
-            self.ErrorMsg.setText("Can't resize the grid while the start\n or end point is already specified.")
-            self.ErrorMsg.show()
-            return
-            
-        self.g_size = gs
-        self.rows = self.cols = self.g_size
+        super().resizeGrid(gs)
         self.d = math.inf * np.ones((self.g_size, self.g_size), dtype = float)
         self.flagged = np.zeros((self.g_size, self.g_size), dtype = bool)
         self.shortestBack = np.empty((self.g_size, self.g_size), dtype = np.object)
         self.update()
-        
-        
-    def paintEvent(self, event):
-        qp = QPainter()
-        
-        qp.begin(self)
-        
-        if not self.paintOver:
-            if self.rows > 1 or self.cols > 1:         
-                self.drawGrid(qp)
-                self.drawSomeNodes(qp)
-                self.showPath(qp)
-        else:
-            qp.setPen(self.paintOverColor)
-            qp.setBrush(self.paintOverColor)
-            qp.drawRect(0, 0, self.width(), self.height())
-        
-        qp.end()
-        
-        
-    def drawGrid(self, qp):
-        x_space = self.width() // self.cols
-        y_space = self.height() // self.rows  
-        qp.setPen(QColor(0, 0, 0))
-        for i in range(0, self.cols):      
-            for j in range(0, self.rows):
-                if (i, j) in self.obstacles:
-                    color = QColor(239, 114, 21)
-                else:
-                    color = QColor(173, 216, 250)
-                qp.setBrush(color)
-                qp.drawRect(i*x_space, j*y_space, x_space, y_space)
-        if self.start != (-1, -1):
-            x0, y0 = self.start
-            qp.setBrush(QColor(34, 139, 34))
-            qp.drawRect(x0*x_space, y0*y_space, x_space, y_space)
-        if self.end != (-1, -1):
-            x0, y0 = self.end
-            qp.setBrush(QColor(180, 0, 0))
-            qp.drawRect(x0*x_space, y0*y_space, x_space, y_space)
             
             
     def drawSomeNodes(self, qp):
@@ -430,43 +376,6 @@ class DijkstrasWidget(QWidget):
             p = self.NodesToDraw[-1]
             qp.setBrush(QColor(34, 139, 34))
             qp.drawRect(p[0]*x_space, p[1]*y_space, x_space, y_space)
-    
-    
-    def mouseEventHelper(self, e):
-        x_space = self.width() // self.cols
-        y_space = self.height() // self.rows 
-        px = py = None
-        self.numClicks += 1
-        for i in range(0, self.cols):
-            if i*x_space <= e.x() < (i+1)*x_space:
-                px = i
-                break
-        for j in range(0, self.rows):
-            if j*y_space <= e.y() < (j+1)*y_space:
-                py = j
-                break
-        
-        return px, py
-    
-    
-    def mousePressEvent(self, e):
-        px, py = self.mouseEventHelper(e)
-        if px != None and py != None:
-            if self.numClicks == 1:
-                self.start = (px, py)
-            elif self.numClicks == 2:         
-                self.end = (px, py)
-            else:
-                self.obstacles.append((px, py))          
-            self.update()
-    
-    
-    def mouseMoveEvent(self, e):
-        if self.numClicks > 2:
-            px, py = self.mouseEventHelper(e)
-            if px != None and py != None:
-                self.obstacles.append((px, py))          
-                self.update()              
             
             
     def performDijkstras(self):
@@ -558,144 +467,31 @@ class DijkstrasWidget(QWidget):
             self.update()
             if len(self.L) == 0:
                 self.pathfound = True
-                self.update()      
-
+                self.update() 
+                
                 
     def reset(self):
-        self.activateSearchDraw = False
-        self.pathfound = False
-        self.path.clear()
+        super().reset()
         self.L.clear()
-        self.NodesToDraw.clear()
-        self.obstacles.clear()
-        self.numClicks = 0
-        self.start = (-1, -1)
-        self.end = (-1, -1)
-        
-    def paintOverEvent(self, color):
-        self.paintOver = True
-        self.paintOverColor = color
-        self.update()
         
         
-    def closeEvent(self, e):
-        self.drawingTimerThread.quit()
-        
-        
-        
-class DFSWidget(QWidget):
+#%% Depth First Search Widget
+class DFSWidget(SearchWidget):
     
-    def __init__(self, parent, x, y, w, h):
-        super().__init__(parent)        
-        self.initSearchInfo()
-        self.initDrawDFSInfo()     
-        self.initUI(x, y, w, h)
-        self.initTimerThread()
-        
         
     def initSearchInfo(self):
-        self.start = (-1, -1)
-        self.end = (-1, -1)
-        self.obstacles = []
-        self.g_size = 15
-        self.rows = self.cols = self.g_size
+        super().initSearchInfo()
         self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
         self.parent = np.empty((self.g_size, self.g_size), dtype = np.object)            
         self.T = []
-        self.ErrorMsg = QMessageBox(self)
-        self.ErrorMsg.setWindowTitle("ERROR")
-        self.ErrorMsg.setStandardButtons(QMessageBox.Ok)
-        
-        
-    def initDrawDFSInfo(self):
-        self.numClicks = 0
-        self.NodesToDraw = []
-        self.path = []
-        self.pathfound = False
-        self.activateSearchDraw = False
-        
-        
-    def initUI(self, x, y, w, h):
-        self.paintOver = False
-        self.paintOverColor = None
-        self.setGeometry(x, y, w, h)
-        self.show()
-
-        
-    def initTimerThread(self):
-        self.drawingTimerThread = Thread(self, self.showSearch, 150)
-        self.drawingTimerThread.start()
 
 
     def resizeGrid(self, gs):
-      
-        if self.start != (-1, -1) or self.end != (-1, -1):
-            self.ErrorMsg.setText("Can't resize the grid while the start\n or end point is already specified.")
-            self.ErrorMsg.show()
-            return
-            
-        self.g_size = gs
-        self.rows = self.cols = self.g_size
+        super().resizeGrid(gs)
         self.discovered = np.zeros((self.g_size, self.g_size), dtype = bool)
         self.parent = np.empty((self.g_size, self.g_size), dtype = np.object)            
         self.update()
         
-        
-    def paintEvent(self, event):
-        qp = QPainter()
-        
-        qp.begin(self)
-        
-        if not self.paintOver:
-            if self.rows > 1 or self.cols > 1:         
-                self.drawGrid(qp)
-                self.drawSomeNodes(qp)
-                self.showPath(qp)
-        else:
-            qp.setPen(self.paintOverColor)
-            qp.setBrush(self.paintOverColor)
-            qp.drawRect(0, 0, self.width(), self.height())
-    
-        
-        qp.end()
-        
-        
-    def drawGrid(self, qp):
-        x_space = self.width() // self.cols
-        y_space = self.height() // self.rows  
-        qp.setPen(QColor(0, 0, 0))
-        for i in range(0, self.cols):      
-            for j in range(0, self.rows):
-                if (i, j) in self.obstacles:
-                    color = QColor(239, 114, 21)
-                else:
-                    color = QColor(173, 216, 250)
-                qp.setBrush(color)
-                qp.drawRect(i*x_space, j*y_space, x_space, y_space)
-        if self.start != (-1, -1):
-            x0, y0 = self.start
-            qp.setBrush(QColor(34, 139, 34))
-            qp.drawRect(x0*x_space, y0*y_space, x_space, y_space)
-        if self.end != (-1, -1):
-            x0, y0 = self.end
-            qp.setBrush(QColor(180, 0, 0))
-            qp.drawRect(x0*x_space, y0*y_space, x_space, y_space)
-            
-            
-    def drawSomeNodes(self, qp):
-        x_space = self.width() // self.cols
-        y_space = self.height() // self.rows 
-        numLayers = len(self.NodesToDraw)
-        for i in range(numLayers):
-            for p in self.NodesToDraw[i]:
-                qp.setPen(QColor(0, 0, 0))
-                if i != numLayers - 1:                  
-                    qp.setBrush(QColor(34, 139, 34))
-                    qp.drawRect(p.x*x_space, p.y*y_space, x_space, y_space)
-                else:
-                    qp.setBrush(QColor(154, 205, 50))
-                    qp.drawRect(p.x*x_space, p.y*y_space, x_space, y_space)
-
     
     def showPath(self, qp):
         if self.pathfound:
@@ -709,43 +505,6 @@ class DFSWidget(QWidget):
                     qp.setBrush(QColor(180, 0, 0))
 
                 qp.drawRect(r.x*x_space, r.y*y_space, x_space, y_space)
-                
-    
-    def mouseEventHelper(self, e):
-        x_space = self.width() // self.cols
-        y_space = self.height() // self.rows 
-        px = py = None
-        self.numClicks += 1
-        for i in range(0, self.cols):
-            if i*x_space <= e.x() < (i+1)*x_space:
-                px = i
-                break
-        for j in range(0, self.rows):
-            if j*y_space <= e.y() < (j+1)*y_space:
-                py = j
-                break
-        
-        return px, py
-    
-    
-    def mousePressEvent(self, e):
-        px, py = self.mouseEventHelper(e)
-        if px != None and py != None:
-            if self.numClicks == 1:
-                self.start = (px, py)
-            elif self.numClicks == 2:         
-                self.end = (px, py)
-            else:
-                self.obstacles.append((px, py))          
-            self.update()
-    
-    
-    def mouseMoveEvent(self, e):
-        if self.numClicks > 2:
-            px, py = self.mouseEventHelper(e)
-            if px != None and py != None:
-                self.obstacles.append((px, py))          
-                self.update()              
             
             
     def performDFS(self):     
@@ -756,6 +515,7 @@ class DFSWidget(QWidget):
                 return
             
             self.discovered[:, :] = False
+            self.parent = np.empty((self.g_size, self.g_size), dtype = np.object)
             if len(self.obstacles) != 0:
                 # Pretends the obstacle points were discovered so the algorithm 
                 # works as if these nodes were never connected
@@ -794,18 +554,13 @@ class DFSWidget(QWidget):
     
     def findPath(self, s, f):
         revPath = []
-        ending_ind = 1
-        for i in range(1, len(self.T)+1):
-            if self.T[-i][1] == f:
-                revPath.append(self.T[-i][1]) 
-                revPath.append(self.T[-i][0])
-                ending_ind = i
-                break
+        v = f
+        while not v == s:
+            revPath.append(v)
+            v = self.parent[v.x, v.y]
             
-        for j in range(ending_ind + 1, len(self.T) + 1):
-            if self.T[-j][1] == revPath[-1]:
-                revPath.append(self.T[-j][0])
-        
+        revPath.append(s)
+                 
         revPath.reverse()
         self.path = revPath
 
@@ -829,24 +584,11 @@ class DFSWidget(QWidget):
             self.update()
             if len(self.T) == 0:
                 self.pathfound = True
-                self.update()   
+                self.update()  
+                
                 
     def reset(self):
-        self.activateSearchDraw = False
-        self.pathfound = False
-        self.path.clear()
+        super().reset()
         self.T.clear()
-        self.NodesToDraw.clear()
-        self.obstacles.clear()
-        self.numClicks = 0
-        self.start = (-1, -1)
-        self.end = (-1, -1)
-        
-    def paintOverEvent(self, color):
-        self.paintOver = True
-        self.paintOverColor = color
-        self.update()
-        
-    def closeEvent(self, e):
-        self.drawingTimerThread.quit()
+
         

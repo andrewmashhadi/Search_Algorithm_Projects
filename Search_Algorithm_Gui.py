@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QPushButton, QSpinBox
 from PyQt5.QtGui import QPainter, QColor
 from Search_Algorithm_Widgets import BFSWidget, DFSWidget, DijkstrasWidget
 
-                
+           
+     
 class MySearchWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -27,7 +28,7 @@ class MySearchWidget(QWidget):
         y = 40
         w = (2*self.width()) // 3 - 40
         h = self.height() - 40
-        self.BFSWid = BFSWidget(self, x, y, w, h)
+        self.BFSWid = BFSWidget(self, x, y, w, h, 150)
         self.DFSWid = None
         self.DijkstraWid = None
         
@@ -97,7 +98,7 @@ class MySearchWidget(QWidget):
         y = 40
         w = (2*self.width()) // 3 - 40
         h = self.height() - 40
-        self.BFSWid = BFSWidget(self, x, y, w, h)
+        self.BFSWid = BFSWidget(self, x, y, w, h, 150)
         self.gs_spinbox.disconnect()
         self.gs_spinbox.setValue(15)
         self.gs_spinbox.valueChanged.connect(self.BFSWid.resizeGrid)
@@ -123,7 +124,7 @@ class MySearchWidget(QWidget):
         y = 40
         w = (2*self.width()) // 3 - 40
         h = self.height() - 40
-        self.DijkstraWid = DijkstrasWidget(self, x, y, w, h)
+        self.DijkstraWid = DijkstrasWidget(self, x, y, w, h, 50)
         self.gs_spinbox.disconnect()
         self.gs_spinbox.setValue(15)      
         self.gs_spinbox.valueChanged.connect(self.DijkstraWid.resizeGrid)
@@ -149,7 +150,7 @@ class MySearchWidget(QWidget):
         y = 40
         w = (2*self.width()) // 3 - 40
         h = self.height() - 40
-        self.DFSWid = DFSWidget(self, x, y, w, h)
+        self.DFSWid = DFSWidget(self, x, y, w, h, 150)
         self.gs_spinbox.disconnect()
         self.gs_spinbox.setValue(15)
         self.gs_spinbox.valueChanged.connect(self.DFSWid.resizeGrid)
